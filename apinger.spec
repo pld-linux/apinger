@@ -2,7 +2,7 @@ Summary:	Alarm Pinger - network monitor with mail notification
 Summary(pl):	Alarm Pinger - monitor sieci z powiadamianiem poczt±
 Name:		apinger
 Version:	0.6.1
-Release:	1
+Release:	2
 License:	GPL
 Group:		Networking/Utilities
 Source0:	http://www.bnet.pl/~jajcus/%{name}/%{name}-%{version}.tar.gz
@@ -38,7 +38,7 @@ IPv4 jak i IPv6.
 %patch0 -p1
 
 %build
-%configure 
+%configure
 %{__make}
 
 %install
@@ -68,7 +68,7 @@ if [ "$1" = "0" ]; then
 		/etc/rc.d/init.d/apinger stop 1>&2
 	fi
 	/sbin/chkconfig --del apinger
-fi    
+fi
 
 %files
 %defattr(644,root,root,755)
