@@ -1,0 +1,14 @@
+diff -durN apinger-0.1.orig/src/apinger.conf apinger-0.1/src/apinger.conf
+--- apinger-0.1.orig/src/apinger.conf	Fri Jul 12 09:40:42 2002
++++ apinger-0.1/src/apinger.conf	Fri Jul 12 10:21:23 2002
+@@ -8,8 +8,8 @@
+ #debug on
+ 
+ # User and group the pinger should run as
+-user "nobody"
+-group "nobody"
++user "daemon"
++group "daemon"
+ 
+ #######################################
+ # Alarm definitions
