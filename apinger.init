@@ -44,6 +44,9 @@ case "$1" in
   status)
 	status apinger
 	;;
+  reload)
+  	killproc apinger -HUP
+	;;
   restart)
 	$0 stop
 	$0 start
