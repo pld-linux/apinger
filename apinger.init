@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# apinger       Start/stop the Alarm Pinger daemon.
+# apinger	Start/stop the Alarm Pinger daemon.
 #
 # chkconfig:	2345 80 20
 #
@@ -25,20 +25,20 @@ case "$1" in
 		RETVAL=$?
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/apinger
 	else
-		msg_already_running Alarm Pinger
+		msg_already_running "Alarm Pinger"
 		exit 1
 	fi
 	;;
   stop)
-        # Stop daemons.
-        if [ -f /var/lock/subsys/apinger ]; then
-                msg_stopping "Alarm Pinger"
-                killproc apinger
-                rm -f /var/lock/subsys/apinger >/dev/null 2>&1
-        else
-                msg_not_running "Alarm Pinger"
-                exit 1
-        fi
+	# Stop daemons.
+	if [ -f /var/lock/subsys/apinger ]; then
+		msg_stopping "Alarm Pinger"
+		killproc apinger
+		rm -f /var/lock/subsys/apinger >/dev/null 2>&1
+	else
+		msg_not_running "Alarm Pinger"
+		exit 1
+	fi
 																	
 	;;
   status)
@@ -58,7 +58,7 @@ case "$1" in
 	$0 start
 	;;
   *)
-	msg_usage: "$0 {start|stop|status|restart}"
+	msg_usage "$0 {start|stop|restart|reload|status}"
 	exit 1
 esac
 
