@@ -11,6 +11,8 @@ Source1:	%{name}.init
 Source2:	%{name}.sysconf
 Patch0:		%{name}-user.patch
 URL:		http://www.bnet.pl/~jajcus/
+PreReq:		rc-scripts
+Requires(post,preun):	/sbin/chkconfig
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
