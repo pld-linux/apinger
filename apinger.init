@@ -25,7 +25,7 @@ case "$1" in
 		RETVAL=$?
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/apinger
 	else
-		msg_Already_Running Alarm Pinger
+		msg_already_running Alarm Pinger
 		exit 1
 	fi
 	;;
@@ -36,7 +36,7 @@ case "$1" in
                 killproc apinger
                 rm -f /var/lock/subsys/apinger >/dev/null 2>&1
         else
-                msg_Not_Running "Alarm Pinger"
+                msg_not_running "Alarm Pinger"
                 exit 1
         fi
 																	
@@ -45,14 +45,20 @@ case "$1" in
 	status apinger
 	;;
   reload)
-  	killproc apinger -HUP
+  	if [ -f /var/lock/subsys/apinger ]; then
+	  	msg_reloading "Alarm Pinger"
+  		killproc apinger -HUP
+	else
+		msg_not_running "Alarm Pinger"
+		exit 1
+	fi
 	;;
   restart)
 	$0 stop
 	$0 start
 	;;
   *)
-	msg_Usage: "$0 {start|stop|status|restart}"
+	msg_usage: "$0 {start|stop|status|restart}"
 	exit 1
 esac
 
