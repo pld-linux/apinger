@@ -42,6 +42,7 @@ IPv4 jak i IPv6.
 %build
 aclocal
 autoheader
+%{__automake}
 %{__autoconf}
 %configure 
 %{__make}
