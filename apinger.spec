@@ -59,7 +59,7 @@ rm -rf $RPM_BUILD_ROOT
 if [ -f /var/lock/subsys/apinger ]; then
 	/etc/rc.d/init.d/apinger restart 1>&2
 else
-	echo "Type \"/etc/rc.d/init.d/apinger start\" to start named" 1>&2
+	echo "Type \"/etc/rc.d/init.d/apinger start\" to start apinger" 1>&2
 fi
 
 %preun
