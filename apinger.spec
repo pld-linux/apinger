@@ -10,8 +10,6 @@ Source1:	%{name}.init
 Source2:	%{name}.sysconf
 Patch0:		%{name}-user.patch
 URL:		http://www.bnet.pl/~jajcus/
-BuildRequires:	autoconf
-BuildRequires:	automake
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
@@ -40,10 +38,6 @@ IPv4 jak i IPv6.
 %patch0 -p1
 
 %build
-aclocal
-autoheader
-%{__automake}
-%{__autoconf}
 %configure 
 %{__make}
 
