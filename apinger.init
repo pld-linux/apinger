@@ -20,7 +20,7 @@ case "$1" in
   start)
 	# Check if the service is already running?
 	if [ ! -f /var/lock/subsys/apinger ]; then
-		msg_starting Alarm Pinger
+		msg_starting "Alarm Pinger"
 		daemon apinger
 		RETVAL=$?
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/apinger
@@ -32,11 +32,11 @@ case "$1" in
   stop)
         # Stop daemons.
         if [ -f /var/lock/subsys/apinger ]; then
-                msg_stopping Alarm Pinger
+                msg_stopping "Alarm Pinger"
                 killproc apinger
                 rm -f /var/lock/subsys/apinger >/dev/null 2>&1
         else
-                msg_Not_Running Alarm Pinger
+                msg_Not_Running "Alarm Pinger"
                 exit 1
         fi
 																	
