@@ -1,5 +1,0 @@
-# Customized setings for apinger
-
-# Nice level for apinger
-SERVICE_RUN_NICE_LEVEL="+5"
-
