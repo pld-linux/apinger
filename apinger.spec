@@ -1,7 +1,7 @@
 Summary:	Alarm Pinger - network monitor with mail notification
 Summary(pl):	Alarm Pinger - monitor sieci z powiadamianiem poczt±
 Name:		apinger
-Version:	0.3
+Version:	0.4
 Release:	1
 License:	GPL
 Group:		Networking/Utilities
