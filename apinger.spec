@@ -18,7 +18,7 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 %description
 Alarm Pinger is a little tool which monitors various IP devices by
 simple ICMP echo requests. There are various other tools, that can do
-this, but most of them are shell or perl scripts, spawning many
+this, but most of them are shell or Perl scripts, spawning many
 processes, thus much CPU-expensive, especially when one wants
 continuous monitoring and fast response on target failure. Alarm
 Pinger is a single process written in C, so it doesn't need much CPU
@@ -29,7 +29,7 @@ Pinger supports both IPv4 and IPv6.
 Alarm Pinger to ma³e narzêdzie monitoruj±ce ró¿ne urz±dzenia IP
 wykorzystuj±c pakiety ICMP echo request/reply (tzw. ping). S± ró¿ne
 inne narzêdzia, które to potrafi±, ale wiêkszo¶æ z nich to skrypty
-shella lub perla uruchamiaj±ce wiele procesów, przez co mocno
+shella lub Perla uruchamiaj±ce wiele procesów, przez co mocno
 obci±¿aj±ce maszynê, szczególnie gdy kto¶ chce ci±g³ego monitorowania
 i szybkiej informacji o awarii. Alarm Pinger to pojedynczy proces
 napisany w C, wiêc nie wymaga wielkiej mocy obliczeniowej, nawet gdy
