@@ -1,7 +1,7 @@
 Summary:	Alarm Pinger - network monitor with mail notification
 Summary(pl):	Alarm Pinger - monitor sieci z powiadamianiem poczt±
 Name:		apinger
-Version:	0.5
+Version:	0.6
 Release:	1
 License:	GPL
 Group:		Networking/Utilities
@@ -72,7 +72,7 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc AUTHORS NEWS TODO README
+%doc AUTHORS NEWS TODO README doc/FAQ.html
 %attr(755,root,root) %{_sbindir}/*
 %attr(754,root,root) %config(noreplace) /etc/rc.d/init.d/apinger
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) /etc/sysconfig/apinger
