@@ -5,7 +5,7 @@ Version:	0.6.1
 Release:	3
 License:	GPL
 Group:		Networking/Utilities
-Source0:	http://www.bnet.pl/~jajcus/%{name}/%{name}-%{version}.tar.gz
+Source0:	http://www.bnet.pl/~jajcus/apinger/%{name}-%{version}.tar.gz
 # Source0-md5:	3505e6503ec06363613f16713501bb33
 Source1:	%{name}.init
 Source2:	%{name}.sysconf
@@ -80,5 +80,5 @@ fi
 %doc AUTHORS NEWS TODO README doc/FAQ.html
 %attr(755,root,root) %{_sbindir}/*
 %attr(754,root,root) %config(noreplace) /etc/rc.d/init.d/apinger
-%attr(640,root,root) %config(noreplace) %verify(not size mtime md5) /etc/sysconfig/apinger
-%attr(640,root,daemon) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/%{name}.conf
+%attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) /etc/sysconfig/apinger
+%attr(640,root,daemon) %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/%{name}.conf
