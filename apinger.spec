@@ -11,8 +11,9 @@ Source1:	%{name}.init
 Source2:	%{name}.sysconf
 Patch0:		%{name}-user.patch
 URL:		http://www.bnet.pl/~jajcus/
-PreReq:		rc-scripts
+BuildRequires:	rpmbuild(macros) >= 1.268
 Requires(post,preun):	/sbin/chkconfig
+Requires:	rc-scripts
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
@@ -60,18 +61,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add apinger
-
-if [ -f /var/lock/subsys/apinger ]; then
-	/etc/rc.d/init.d/apinger restart 1>&2
-else
-	echo "Type \"/etc/rc.d/init.d/apinger start\" to start apinger" 1>&2
-fi
+%service apinger restart
 
 %preun
 if [ "$1" = "0" ]; then
-	if [ -f /var/lock/subsys/apinger ]; then
-		/etc/rc.d/init.d/apinger stop 1>&2
-	fi
+	%service apinger stop
 	/sbin/chkconfig --del apinger
 fi
 
