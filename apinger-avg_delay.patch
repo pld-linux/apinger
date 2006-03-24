@@ -1,0 +1,12 @@
+diff -dur -x '*~' apinger-0.6.1.orig/src/apinger.c apinger-0.6.1/src/apinger.c
+--- apinger-0.6.1.orig/src/apinger.c	2003-03-26 12:24:59.000000000 +0100
++++ apinger-0.6.1/src/apinger.c	2006-03-24 08:37:26.000000000 +0100
+@@ -586,7 +586,7 @@
+ 	timersub(&time_recv,&ti->timestamp,&tv);
+ 	delay=tv.tv_sec*1000.0+((double)tv.tv_usec)/1000.0;
+ 	debug("#%i from %s(%s) delay: %4.3fms",ti->seq,t->description,t->name,delay);
+-	if (t->received>t->config->avg_delay_samples)
++	if (t->received >= t->config->avg_delay_samples)
+ 		tmp=t->rbuf[t->received%t->config->avg_delay_samples];
+ 	else
+ 		tmp=0;
