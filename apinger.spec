@@ -1,5 +1,5 @@
 Summary:	Alarm Pinger - network monitor with mail notification
-Summary(pl.UTF-8):   Alarm Pinger - monitor sieci z powiadamianiem pocztą
+Summary(pl.UTF-8):	Alarm Pinger - monitor sieci z powiadamianiem pocztą
 Name:		apinger
 Version:	0.6.1
 Release:	5
