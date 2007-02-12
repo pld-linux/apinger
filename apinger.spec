@@ -1,5 +1,5 @@
 Summary:	Alarm Pinger - network monitor with mail notification
-Summary(pl):	Alarm Pinger - monitor sieci z powiadamianiem poczt±
+Summary(pl.UTF-8):   Alarm Pinger - monitor sieci z powiadamianiem pocztÄ…
 Name:		apinger
 Version:	0.6.1
 Release:	5
@@ -29,15 +29,15 @@ Pinger is a single process written in C, so it doesn't need much CPU
 power even when monitoring many targets with frequent probes. Alarm
 Pinger supports both IPv4 and IPv6.
 
-%description -l pl
-Alarm Pinger to ma³e narzêdzie monitoruj±ce ró¿ne urz±dzenia IP
-wykorzystuj±c pakiety ICMP echo request/reply (tzw. ping). S± ró¿ne
-inne narzêdzia, które to potrafi±, ale wiêkszo¶æ z nich to skrypty
-shella lub Perla uruchamiaj±ce wiele procesów, przez co mocno
-obci±¿aj±ce maszynê, szczególnie gdy kto¶ chce ci±g³ego monitorowania
+%description -l pl.UTF-8
+Alarm Pinger to maÅ‚e narzÄ™dzie monitorujÄ…ce rÃ³Å¼ne urzÄ…dzenia IP
+wykorzystujÄ…c pakiety ICMP echo request/reply (tzw. ping). SÄ… rÃ³Å¼ne
+inne narzÄ™dzia, ktÃ³re to potrafiÄ…, ale wiÄ™kszoÅ›Ä‡ z nich to skrypty
+shella lub Perla uruchamiajÄ…ce wiele procesÃ³w, przez co mocno
+obciÄ…Å¼ajÄ…ce maszynÄ™, szczegÃ³lnie gdy ktoÅ› chce ciÄ…gÅ‚ego monitorowania
 i szybkiej informacji o awarii. Alarm Pinger to pojedynczy proces
-napisany w C, wiêc nie wymaga wielkiej mocy obliczeniowej, nawet gdy
-bada wiele urz±dzeñ czêstymi pingami. Alarm Pinger obs³uguje zarówno
+napisany w C, wiÄ™c nie wymaga wielkiej mocy obliczeniowej, nawet gdy
+bada wiele urzÄ…dzeÅ„ czÄ™stymi pingami. Alarm Pinger obsÅ‚uguje zarÃ³wno
 IPv4 jak i IPv6.
 
 %prep
