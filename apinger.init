@@ -15,11 +15,7 @@
 # Get service config
 [ -f /etc/sysconfig/apinger ] && . /etc/sysconfig/apinger
 
-RETVAL=0
-# See how we were called.
-case "$1" in
-  start)
-	# Check if the service is already running?
+start() {
 	if [ ! -f /var/lock/subsys/apinger ]; then
 		msg_starting "Alarm Pinger"
 		daemon apinger
@@ -28,9 +24,9 @@ case "$1" in
 	else
 		msg_already_running "Alarm Pinger"
 	fi
-	;;
-  stop)
-	# Stop daemons.
+}
+
+stop() {
 	if [ -f /var/lock/subsys/apinger ]; then
 		msg_stopping "Alarm Pinger"
 		killproc apinger
@@ -38,6 +34,15 @@ case "$1" in
 	else
 		msg_not_running "Alarm Pinger"
 	fi
+}
+
+RETVAL=0
+# See how we were called.
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
 	;;
   status)
 	status apinger
@@ -54,8 +59,8 @@ case "$1" in
 	fi
 	;;
   restart)
-	$0 stop
-	$0 start
+	stop
+	start
 	exit $?
 	;;
   *)
