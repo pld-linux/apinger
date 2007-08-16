@@ -61,7 +61,6 @@ case "$1" in
   restart)
 	stop
 	start
-	exit $?
 	;;
   *)
 	msg_usage "$0 {start|stop|restart|reload|force-reload|status}"
