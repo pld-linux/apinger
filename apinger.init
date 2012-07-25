@@ -43,6 +43,7 @@ case "$1" in
   	start
 	;;
   stop)
+  	stop
 	;;
   status)
 	status apinger
