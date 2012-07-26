@@ -17,6 +17,7 @@ Patch4:		%{name}-ac.patch
 Patch5:		%{name}-no_exit.patch
 Patch6:		%{name}-no_forked_receiver.patch
 Patch7:		%{name}-srcip.patch
+Patch8:		%{name}-status.patch
 URL:		http://www.bnet.pl/~jajcus/
 BuildRequires:	rpmbuild(macros) >= 1.268
 Requires(post,preun):	/sbin/chkconfig
@@ -54,6 +55,7 @@ IPv4 jak i IPv6.
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
+%patch8 -p1
 
 %build
 %{__aclocal}
