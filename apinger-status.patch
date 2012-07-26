@@ -1,0 +1,132 @@
+diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
+--- apinger-0.6.1.orig//src/apinger.c	2012-07-26 11:10:07.608188198 +0000
++++ apinger-0.6.1/src/apinger.c	2012-07-26 11:09:49.216188301 +0000
+@@ -824,26 +824,49 @@
+ 		return;
+ 	}
+ 	tm=time(NULL);
+-	fprintf(f,"%s\n",ctime(&tm));
++	if(!config->status_format) fprintf(f,"%s\n",ctime(&tm));
+ 	for(t=targets;t;t=t->next){
+-		fprintf(f,"Target: %s\n",t->name);
+-		fprintf(f,"Source IP: %s\n",t->config->srcip);
+-		fprintf(f,"Description: %s\n",t->description);
+-		fprintf(f,"Last reply received: #%i %s",t->last_received,
+-			ctime(&t->last_received_tv.tv_sec));
+-		fprintf(f,"Average delay: %0.3fms\n",AVG_DELAY(t));
++		if(config->status_format){
++			fprintf(f,"%s|%s|%s|%i|%i|%u|",t->name, t->config->srcip, t->description, t->last_sent+1,
++				 t->received, t->last_received_tv.tv_sec);
++			fprintf(f,"%0.3fms|", AVG_DELAY(t));
++		}
++		else{
++			fprintf(f,"Target: %s\n",t->name);
++			fprintf(f,"Source IP: %s\n",t->config->srcip);
++			fprintf(f,"Description: %s\n",t->description);
++			fprintf(f,"Last reply received: #%i %s",t->last_received,
++				ctime(&t->last_received_tv.tv_sec));
++			fprintf(f,"Average delay: %0.3fms\n",AVG_DELAY(t));
++		}
+ 		if (AVG_LOSS_KNOWN(t)){
+-			fprintf(f,"Average packet loss: %0.1f%%\n",AVG_LOSS(t));
++			if(config->status_format){
++				fprintf(f,"%0.1f%%",AVG_LOSS(t));
++			}
++			else{
++				fprintf(f,"Average packet loss: %0.1f%%\n",AVG_LOSS(t));
++			}
++		}
++		if(config->status_format){
++			fprintf(f, "|");
++		}
++		else{
++			fprintf(f,"Active alarms:");
+ 		}
+-		fprintf(f,"Active alarms:");
+ 		if (t->active_alarms){
+ 			for(al=t->active_alarms;al;al=al->next){
+ 				a=al->alarm;
+-				fprintf(f," \"%s\"",a->name);
++				if(config->status_format){
++					fprintf(f,"%s",a->name);
++				}
++				else{
++					fprintf(f," \"%s\"",a->name);
++				}
+ 			}
+-			fprintf(f,"\n");
++			if(!config->status_format) fprintf(f,"\n");
+ 		}
+-		else fprintf(f," None\n");
++		else fprintf(f," none");
++		if(!config->status_format) fprintf(f,"\n");
+ 
+ 		buf1=NEW(char,t->config->avg_loss_delay_samples+1);
+ 		buf2=NEW(char,t->config->avg_loss_samples+1);
+diff -ur apinger-0.6.1.orig//src/apinger.conf apinger-0.6.1/src/apinger.conf
+--- apinger-0.6.1.orig//src/apinger.conf	2012-07-26 11:24:35.000000000 +0000
++++ apinger-0.6.1/src/apinger.conf	2012-07-26 11:30:33.352064094 +0000
+@@ -30,6 +30,10 @@
+ #	## Interval between file updates
+ #	## when 0 or not set, file is written only when SIGUSR1 is received
+ #	interval 5m
++#
++#	## Create status file in script parseable format (on) or human
++#	## readable format (off)
++#	scriptformat off
+ #}
+ 
+ ########################################
+diff -ur apinger-0.6.1.orig//src/cfgparser1.y apinger-0.6.1/src/cfgparser1.y
+--- apinger-0.6.1.orig//src/cfgparser1.y	2012-07-26 10:15:23.000000000 +0000
++++ apinger-0.6.1/src/cfgparser1.y	2012-07-26 10:35:18.153063319 +0000
+@@ -105,6 +105,7 @@
+ %token AVG_LOSS_DELAY_SAMPLES
+ 
+ %token FILE_
++%token SCRIPTFORMAT
+ 
+ %token ERROR
+ 
+@@ -283,6 +284,8 @@
+ 		{ cur_config.status_interval=$2; }
+ 	| INTERVAL TIME
+ 		{ cur_config.status_interval=$2; }
++	| SCRIPTFORMAT boolean
++		{ cur_config.status_format=$2; }
+ 	| statuscfg separator statuscfg
+ ;
+ 
+diff -ur apinger-0.6.1.orig//src/cfgparser2.l apinger-0.6.1/src/cfgparser2.l
+--- apinger-0.6.1.orig//src/cfgparser2.l	2012-07-26 10:15:23.000000000 +0000
++++ apinger-0.6.1/src/cfgparser2.l	2012-07-26 10:31:46.408063728 +0000
+@@ -86,6 +86,7 @@
+ down		{ LOC; LOCINC; return DOWN; }
+ false		{ LOC; LOCINC; return FALSE; }
+ file		{ LOC; LOCINC; return FILE_; }
++scriptformat	{ LOC; LOCINC; return SCRIPTFORMAT; }
+ group		{ LOC; LOCINC; return GROUP; }
+ interval	{ LOC; LOCINC; return INTERVAL; }
+ loss		{ LOC; LOCINC; return LOSS; }
+diff -ur apinger-0.6.1.orig//src/conf.h apinger-0.6.1/src/conf.h
+--- apinger-0.6.1.orig//src/conf.h	2012-07-26 10:15:23.000000000 +0000
++++ apinger-0.6.1/src/conf.h	2012-07-26 10:33:09.770251230 +0000
+@@ -98,6 +98,7 @@
+ 	char *pid_file;
+ 	char *status_file;
+ 	int status_interval;
++	int status_format;
+ 	char *timestamp_format;
+ };
+ 
+diff -ur apinger-0.6.1.orig//src/main.c apinger-0.6.1/src/main.c
+--- apinger-0.6.1.orig//src/main.c	2012-07-26 10:15:23.000000000 +0000
++++ apinger-0.6.1/src/main.c	2012-07-26 11:13:52.643188408 +0000
+@@ -89,6 +89,7 @@
+ 	"/var/run/apinger.pid", /* pid file */
+ 	NULL,			/* status file */
+ 	0,			/* status interval */
++	0,			/* status format */
+ 	"%b %d %H:%M:%S"	/* timestamp format */
+ };
+ 
