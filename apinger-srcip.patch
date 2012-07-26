@@ -1,7 +1,17 @@
 diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
 --- apinger-0.6.1.orig//src/apinger.c	2012-07-25 17:46:59.421182293 +0000
 +++ apinger-0.6.1/src/apinger.c	2012-07-25 17:44:41.642064536 +0000
-@@ -277,6 +277,7 @@
+@@ -162,6 +162,9 @@
+ 		case 't':
+ 			values[n]=t->name;
+ 			break;
++		case 'i':
++			values[n]=t->config->srcip;
++			break;
+ 		case 'T':
+ 			values[n]=t->description;
+ 			break;
+@@ -277,6 +280,7 @@
  	else
  		fprintf(f,"alarm canceled: %s\n",a->name);
  	fprintf(f,"Target: %s\n",t->name);
@@ -9,7 +19,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  	fprintf(f,"Description: %s\n",t->description);
  	fprintf(f,"Probes sent: %i\n",t->last_sent+1);
  	fprintf(f,"Replies received: %i\n",t->received);
-@@ -646,7 +647,7 @@
+@@ -646,7 +650,7 @@
  struct target *t,*pt,*nt;
  struct target_cfg *tc;
  struct active_alarm_list *al,*nal;
@@ -18,7 +28,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  int r;
  int l;
  
-@@ -666,6 +667,8 @@
+@@ -666,6 +670,8 @@
  				nal=al->next;
  				free(al);
  			}
@@ -27,7 +37,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			free(t->queue);
  			free(t->rbuf);
  			free(t->name);
-@@ -684,11 +687,6 @@
+@@ -684,11 +690,6 @@
  			memset(&addr,0,sizeof(addr));
  			r=inet_pton(AF_INET,tc->name,&addr.addr4.sin_addr);
  			if (r){
@@ -39,7 +49,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  				addr.addr.sa_family=AF_INET;
  			}else{
  #ifdef HAVE_IPV6
-@@ -708,12 +706,38 @@
+@@ -708,12 +709,38 @@
  				addr.addr.sa_family=AF_INET6;
  #endif
  			}
@@ -78,7 +88,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			targets=t;
  		}
  		t->config=tc;
-@@ -733,6 +757,7 @@
+@@ -733,6 +760,7 @@
  		assert(t->rbuf!=NULL);
  		memset(t->rbuf,0,l);
  	}
@@ -86,7 +96,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  	if (targets==NULL){
  		logit("No usable targets found, exiting");
  		exit(1);
-@@ -753,6 +778,8 @@
+@@ -753,6 +781,8 @@
  			nal=al->next;
  			free(al);
  		}
@@ -95,7 +105,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  		free(t->queue);
  		free(t->rbuf);
  		free(t->name);
-@@ -800,6 +827,7 @@
+@@ -800,6 +830,7 @@
  	fprintf(f,"%s\n",ctime(&tm));
  	for(t=targets;t;t=t->next){
  		fprintf(f,"Target: %s\n",t->name);
@@ -103,7 +113,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  		fprintf(f,"Description: %s\n",t->description);
  		fprintf(f,"Last reply received: #%i %s",t->last_received,
  			ctime(&t->last_received_tv.tv_sec));
-@@ -865,7 +893,7 @@
+@@ -865,7 +896,7 @@
  void main_loop(void){
  struct target *t;
  struct timeval cur_time,next_status={0,0},tv,next_report={0,0},next_rrd_update={0,0};
@@ -112,7 +122,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  int timeout;
  int npfd=0;
  int i;
-@@ -876,16 +904,8 @@
+@@ -876,16 +907,8 @@
  struct alarm_cfg *a;
  
  	configure_targets();
@@ -131,7 +141,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  	if (config->status_interval){
  		gettimeofday(&cur_time,NULL);
  		tv.tv_sec=config->status_interval/1000;
-@@ -893,10 +913,16 @@
+@@ -893,10 +916,16 @@
  		timeradd(&cur_time,&tv,&next_status);
  	}
  	while(!interrupted_by){
@@ -148,7 +158,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			for(al=t->config->alarms;al;al=nal){
  				a=al->alarm;
  				nal=al->next;
-@@ -972,8 +998,20 @@
+@@ -972,8 +1001,20 @@
  		poll(pfd,npfd,timeout);
  		for(i=0;i<npfd;i++){
  			if (!pfd[i].revents&POLLIN) continue;
@@ -171,6 +181,17 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			pfd[i].revents=0;
  		}
  		if (status_request){
+diff -ur apinger-0.6.1.orig//src/apinger.conf apinger-0.6.1/src/apinger.conf
+--- apinger-0.6.1.orig//src/apinger.conf	2012-07-26 11:14:05.000000000 +0000
++++ apinger-0.6.1/src/apinger.conf	2012-07-26 11:21:50.624064932 +0000
+@@ -48,6 +48,7 @@
+ 
+ 	## Following "macros" may be used in options below:
+ 	##	%t - target name (address)
++	##	%i - source IP (address)
+ 	##	%T - target description
+ 	##	%a - alarm name
+ 	##	%A - alarm type ("down"/"loss"/"delay")
 diff -ur apinger-0.6.1.orig//src/apinger.h apinger-0.6.1/src/apinger.h
 --- apinger-0.6.1.orig//src/apinger.h	2012-07-25 17:46:59.422189729 +0000
 +++ apinger-0.6.1/src/apinger.h	2012-07-25 17:44:41.642064536 +0000
