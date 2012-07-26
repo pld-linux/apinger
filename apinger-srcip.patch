@@ -1,7 +1,18 @@
 diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
 --- apinger-0.6.1.orig//src/apinger.c	2012-07-25 17:46:59.421182293 +0000
 +++ apinger-0.6.1/src/apinger.c	2012-07-25 17:44:41.642064536 +0000
-@@ -646,7 +646,7 @@
+@@ -276,8 +276,9 @@
+ 		fprintf(f,"ALARM went off: %s\n",a->name);
+ 	else
+ 		fprintf(f,"alarm canceled: %s\n",a->name);
+-	fprintf(f,"Target: %s\n",t->name);
+ 	fprintf(f,"Description: %s\n",t->description);
++	fprintf(f,"Target: %s\n",t->name);
++	fprintf(f,"Source IP: %s\n",t->config->srcip);
+ 	fprintf(f,"Probes sent: %i\n",t->last_sent+1);
+ 	fprintf(f,"Replies received: %i\n",t->received);
+ 	fprintf(f,"Last reply received: #%i %s",t->last_received,
+@@ -646,7 +647,7 @@
  struct target *t,*pt,*nt;
  struct target_cfg *tc;
  struct active_alarm_list *al,*nal;
@@ -10,7 +21,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  int r;
  int l;
  
-@@ -666,6 +666,8 @@
+@@ -666,6 +667,8 @@
  				nal=al->next;
  				free(al);
  			}
@@ -19,7 +30,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			free(t->queue);
  			free(t->rbuf);
  			free(t->name);
-@@ -684,11 +686,6 @@
+@@ -684,11 +687,6 @@
  			memset(&addr,0,sizeof(addr));
  			r=inet_pton(AF_INET,tc->name,&addr.addr4.sin_addr);
  			if (r){
@@ -31,7 +42,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  				addr.addr.sa_family=AF_INET;
  			}else{
  #ifdef HAVE_IPV6
-@@ -708,12 +705,38 @@
+@@ -708,12 +706,38 @@
  				addr.addr.sa_family=AF_INET6;
  #endif
  			}
@@ -70,7 +81,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			targets=t;
  		}
  		t->config=tc;
-@@ -733,6 +756,7 @@
+@@ -733,6 +757,7 @@
  		assert(t->rbuf!=NULL);
  		memset(t->rbuf,0,l);
  	}
@@ -78,7 +89,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  	if (targets==NULL){
  		logit("No usable targets found, exiting");
  		exit(1);
-@@ -753,6 +777,8 @@
+@@ -753,6 +778,8 @@
  			nal=al->next;
  			free(al);
  		}
@@ -87,7 +98,18 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  		free(t->queue);
  		free(t->rbuf);
  		free(t->name);
-@@ -865,7 +891,7 @@
+@@ -799,8 +826,9 @@
+ 	tm=time(NULL);
+ 	fprintf(f,"%s\n",ctime(&tm));
+ 	for(t=targets;t;t=t->next){
+-		fprintf(f,"Target: %s\n",t->name);
+ 		fprintf(f,"Description: %s\n",t->description);
++		fprintf(f,"Target: %s\n",t->name);
++		fprintf(f,"Source IP: %s\n",t->config->srcip);
+ 		fprintf(f,"Last reply received: #%i %s",t->last_received,
+ 			ctime(&t->last_received_tv.tv_sec));
+ 		fprintf(f,"Average delay: %0.3fms\n",AVG_DELAY(t));
+@@ -865,7 +893,7 @@
  void main_loop(void){
  struct target *t;
  struct timeval cur_time,next_status={0,0},tv,next_report={0,0},next_rrd_update={0,0};
@@ -96,7 +118,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  int timeout;
  int npfd=0;
  int i;
-@@ -876,16 +902,8 @@
+@@ -876,16 +904,8 @@
  struct alarm_cfg *a;
  
  	configure_targets();
@@ -115,7 +137,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  	if (config->status_interval){
  		gettimeofday(&cur_time,NULL);
  		tv.tv_sec=config->status_interval/1000;
-@@ -893,10 +911,16 @@
+@@ -893,10 +913,16 @@
  		timeradd(&cur_time,&tv,&next_status);
  	}
  	while(!interrupted_by){
@@ -132,7 +154,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  			for(al=t->config->alarms;al;al=nal){
  				a=al->alarm;
  				nal=al->next;
-@@ -972,8 +996,20 @@
+@@ -972,8 +998,20 @@
  		poll(pfd,npfd,timeout);
  		for(i=0;i<npfd;i++){
  			if (!pfd[i].revents&POLLIN) continue;
