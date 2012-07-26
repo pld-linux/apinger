@@ -1,0 +1,28 @@
+diff -ur apinger-0.6.1.orig//acinclude.m4 apinger-0.6.1/acinclude.m4
+--- apinger-0.6.1.orig//acinclude.m4	2002-07-17 09:32:51.000000000 +0000
++++ apinger-0.6.1/acinclude.m4	2012-07-26 09:20:30.850250615 +0000
+@@ -39,8 +39,8 @@
+ 		[$jk_inet_includes
+ $jk_icmp_includes])
+ 
+-AC_CHECK_MEMBERS([struct icmp.icmp_type, struct icmp.icmp_code,\
+-struct icmp.icmp_cksum, struct icmp.icmp_seq,\
++AC_CHECK_MEMBERS([struct icmp.icmp_type, struct icmp.icmp_code,
++struct icmp.icmp_cksum, struct icmp.icmp_seq,
+ struct icmp.icmp_id],[],
+ 		AC_MSG_ERROR(struct icmp not defined or not compatible),
+ 		[$jk_inet_includes
+diff -ur apinger-0.6.1.orig//aclocal.m4 apinger-0.6.1/aclocal.m4
+--- apinger-0.6.1.orig//aclocal.m4	2003-03-26 11:37:33.000000000 +0000
++++ apinger-0.6.1/aclocal.m4	2012-07-26 09:20:52.707251258 +0000
+@@ -52,8 +52,8 @@
+ 		[$jk_inet_includes
+ $jk_icmp_includes])
+ 
+-AC_CHECK_MEMBERS([struct icmp.icmp_type, struct icmp.icmp_code,\
+-struct icmp.icmp_cksum, struct icmp.icmp_seq,\
++AC_CHECK_MEMBERS([struct icmp.icmp_type, struct icmp.icmp_code,
++struct icmp.icmp_cksum, struct icmp.icmp_seq,
+ struct icmp.icmp_id],[],
+ 		AC_MSG_ERROR(struct icmp not defined or not compatible),
+ 		[$jk_inet_includes
