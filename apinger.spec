@@ -5,7 +5,7 @@ Version:	0.6.1
 Release:	6
 License:	GPL
 Group:		Networking/Utilities
-Source0:	http://www.bnet.pl/~jajcus/apinger/%{name}-%{version}.tar.gz
+Source0:	https://github.com/downloads/Jajcus/apinger/%{name}-%{version}.tar.gz
 # Source0-md5:	3505e6503ec06363613f16713501bb33
 Source1:	%{name}.init
 Source2:	%{name}.sysconf
@@ -18,7 +18,7 @@ Patch5:		%{name}-no_exit.patch
 Patch6:		%{name}-no_forked_receiver.patch
 Patch7:		%{name}-srcip.patch
 Patch8:		%{name}-status.patch
-URL:		http://www.bnet.pl/~jajcus/
+URL:		https://github.com/Jajcus/apinger/
 BuildRequires:	rpmbuild(macros) >= 1.268
 Requires(post,preun):	/sbin/chkconfig
 Requires:	rc-scripts
