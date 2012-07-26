@@ -188,7 +188,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.conf apinger-0.6.1/src/apinger.conf
  
  	## Following "macros" may be used in options below:
  	##	%t - target name (address)
-+	##	%i - source IP (address)
++	##	%i - source name (address)
  	##	%T - target description
  	##	%a - alarm name
  	##	%A - alarm type ("down"/"loss"/"delay")
