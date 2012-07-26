@@ -1,17 +1,14 @@
 diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
 --- apinger-0.6.1.orig//src/apinger.c	2012-07-25 17:46:59.421182293 +0000
 +++ apinger-0.6.1/src/apinger.c	2012-07-25 17:44:41.642064536 +0000
-@@ -276,8 +276,9 @@
- 		fprintf(f,"ALARM went off: %s\n",a->name);
+@@ -277,6 +277,7 @@
  	else
  		fprintf(f,"alarm canceled: %s\n",a->name);
--	fprintf(f,"Target: %s\n",t->name);
- 	fprintf(f,"Description: %s\n",t->description);
-+	fprintf(f,"Target: %s\n",t->name);
+ 	fprintf(f,"Target: %s\n",t->name);
 +	fprintf(f,"Source IP: %s\n",t->config->srcip);
+ 	fprintf(f,"Description: %s\n",t->description);
  	fprintf(f,"Probes sent: %i\n",t->last_sent+1);
  	fprintf(f,"Replies received: %i\n",t->received);
- 	fprintf(f,"Last reply received: #%i %s",t->last_received,
 @@ -646,7 +647,7 @@
  struct target *t,*pt,*nt;
  struct target_cfg *tc;
@@ -98,17 +95,14 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
  		free(t->queue);
  		free(t->rbuf);
  		free(t->name);
-@@ -799,8 +826,9 @@
- 	tm=time(NULL);
+@@ -800,6 +827,7 @@
  	fprintf(f,"%s\n",ctime(&tm));
  	for(t=targets;t;t=t->next){
--		fprintf(f,"Target: %s\n",t->name);
- 		fprintf(f,"Description: %s\n",t->description);
-+		fprintf(f,"Target: %s\n",t->name);
+ 		fprintf(f,"Target: %s\n",t->name);
 +		fprintf(f,"Source IP: %s\n",t->config->srcip);
+ 		fprintf(f,"Description: %s\n",t->description);
  		fprintf(f,"Last reply received: #%i %s",t->last_received,
  			ctime(&t->last_received_tv.tv_sec));
- 		fprintf(f,"Average delay: %0.3fms\n",AVG_DELAY(t));
 @@ -865,7 +893,7 @@
  void main_loop(void){
  struct target *t;
