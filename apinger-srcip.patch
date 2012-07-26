@@ -1,0 +1,520 @@
+diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
+--- apinger-0.6.1.orig//src/apinger.c	2012-07-25 17:46:59.421182293 +0000
++++ apinger-0.6.1/src/apinger.c	2012-07-25 17:44:41.642064536 +0000
+@@ -646,7 +646,7 @@
+ struct target *t,*pt,*nt;
+ struct target_cfg *tc;
+ struct active_alarm_list *al,*nal;
+-union addr addr;
++union addr addr, srcaddr;
+ int r;
+ int l;
+ 
+@@ -666,6 +666,8 @@
+ 				nal=al->next;
+ 				free(al);
+ 			}
++			if (t->socket)
++				close(t->socket);
+ 			free(t->queue);
+ 			free(t->rbuf);
+ 			free(t->name);
+@@ -684,11 +686,6 @@
+ 			memset(&addr,0,sizeof(addr));
+ 			r=inet_pton(AF_INET,tc->name,&addr.addr4.sin_addr);
+ 			if (r){
+-				if (icmp_sock<0){
+-					logit("Sorry, IPv4 is not available\n");
+-					logit("Ignoring target %s\n",tc->name);
+-					continue;
+-				}
+ 				addr.addr.sa_family=AF_INET;
+ 			}else{
+ #ifdef HAVE_IPV6
+@@ -708,12 +705,38 @@
+ 				addr.addr.sa_family=AF_INET6;
+ #endif
+ 			}
++			memset(&srcaddr,0,sizeof(srcaddr));
++			debug("Converting srcip %s", tc->srcip);
++			r=inet_pton(AF_INET,tc->srcip,&srcaddr.addr4.sin_addr);
++			if (r){
++				srcaddr.addr.sa_family=AF_INET;
++			}else{
++#ifdef HAVE_IPV6
++				r=inet_pton(AF_INET6,tc->srcip,&srcaddr.addr6.sin6_addr);
++				if (r==0){
++#endif
++					logit("Bad srcip address %s for target %s\n", tc->srcip, tc->name);
++					logit("Ignoring target %s\n",tc->name);
++					continue;
++#ifdef HAVE_IPV6
++				}
++				if (icmp6_sock<0){
++					logit("Sorry, IPv6 is not available\n");
++					logit("Ignoring target %s\n",tc->name);
++					continue;
++				}
++				srcaddr.addr.sa_family=AF_INET6;
++#endif
++			}
+ 			t=NEW(struct target,1);
+ 			memset(t,0,sizeof(struct target));
+ 			t->name=strdup(tc->name);
+ 			t->description=strdup(tc->description);
+ 			t->addr=addr;
++			t->ifaddr=srcaddr;
+ 			t->next=targets;
++			if(t->addr.addr.sa_family==AF_INET) make_icmp_socket(t);
++			if(t->addr.addr.sa_family==AF_INET6) make_icmp6_socket(t);
+ 			targets=t;
+ 		}
+ 		t->config=tc;
+@@ -733,6 +756,7 @@
+ 		assert(t->rbuf!=NULL);
+ 		memset(t->rbuf,0,l);
+ 	}
++
+ 	if (targets==NULL){
+ 		logit("No usable targets found, exiting");
+ 		exit(1);
+@@ -753,6 +777,8 @@
+ 			nal=al->next;
+ 			free(al);
+ 		}
++		if (t->socket)
++			close(t->socket);
+ 		free(t->queue);
+ 		free(t->rbuf);
+ 		free(t->name);
+@@ -865,7 +891,7 @@
+ void main_loop(void){
+ struct target *t;
+ struct timeval cur_time,next_status={0,0},tv,next_report={0,0},next_rrd_update={0,0};
+-struct pollfd pfd[2];
++struct pollfd pfd[1024];
+ int timeout;
+ int npfd=0;
+ int i;
+@@ -876,16 +902,8 @@
+ struct alarm_cfg *a;
+ 
+ 	configure_targets();
+-	if (icmp_sock){
+-		pfd[npfd].events=POLLIN|POLLERR|POLLHUP|POLLNVAL;
+-		pfd[npfd].revents=0;
+-		pfd[npfd++].fd=icmp_sock;
+-	}
+-	if (icmp6_sock){
+-		pfd[npfd].events=POLLIN|POLLERR|POLLHUP|POLLNVAL;
+-		pfd[npfd++].fd=icmp6_sock;
+-		pfd[npfd].revents=0;
+-	}
++	memset(&pfd, '\0', sizeof pfd);
++
+ 	if (config->status_interval){
+ 		gettimeofday(&cur_time,NULL);
+ 		tv.tv_sec=config->status_interval/1000;
+@@ -893,10 +911,16 @@
+ 		timeradd(&cur_time,&tv,&next_status);
+ 	}
+ 	while(!interrupted_by){
++		npfd = 0;
+ 		gettimeofday(&cur_time,NULL);
+ 		if ( !timercmp(&next_probe,&cur_time,>) )
+ 			timerclear(&next_probe);
+ 		for(t=targets;t;t=t->next){
++			if (t->socket){
++				pfd[npfd].events=POLLIN|POLLERR|POLLHUP|POLLNVAL;
++				pfd[npfd].revents=0;
++				pfd[npfd++].fd=t->socket;
++			}
+ 			for(al=t->config->alarms;al;al=nal){
+ 				a=al->alarm;
+ 				nal=al->next;
+@@ -972,8 +996,20 @@
+ 		poll(pfd,npfd,timeout);
+ 		for(i=0;i<npfd;i++){
+ 			if (!pfd[i].revents&POLLIN) continue;
+-			if (pfd[i].fd==icmp_sock) recv_icmp();
+-			else if (pfd[i].fd==icmp6_sock) recv_icmp6();
++			for(t=targets;t;t=t->next){
++				if (t->addr.addr.sa_family==AF_INET) {
++					if (t->socket == pfd[i].fd) {
++						recv_icmp(t);
++						break;
++					}
++				}
++				if (t->addr.addr.sa_family==AF_INET6) {
++					if (t->socket == pfd[i].fd) {
++						recv_icmp6(t);
++						break;
++					}
++				}
++			}
+ 			pfd[i].revents=0;
+ 		}
+ 		if (status_request){
+diff -ur apinger-0.6.1.orig//src/apinger.h apinger-0.6.1/src/apinger.h
+--- apinger-0.6.1.orig//src/apinger.h	2012-07-25 17:46:59.422189729 +0000
++++ apinger-0.6.1/src/apinger.h	2012-07-25 17:44:41.642064536 +0000
+@@ -47,6 +47,8 @@
+ #endif
+ #include "conf.h"
+ 
++#include <ifaddrs.h>
++
+ union addr {
+ 	struct sockaddr addr;
+ 	struct sockaddr_in addr4;
+@@ -67,10 +69,11 @@
+ 	char *description;	/* description */
+ 	
+ 	union addr addr;	/* target address */
+-	
++
+ 	char *queue;		/*
+ 				contains info about recently sent packets
+ 				"1" means it was received */
++	int socket;
+ 	int last_sent;		/* sequence number of the last ping sent */
+ 	int last_received;	/* sequence number of the last ping received */
+ 	struct timeval last_received_tv; /* timestamp of the last ping received */
+@@ -90,6 +93,7 @@
+ 	struct target_cfg *config;
+ 	
+ 	struct target *next;
++	union addr ifaddr;	/* iface address */
+ };
+ 
+ #define AVG_DELAY_KNOWN(t) (t->upsent >= t->config->avg_delay_samples)
+@@ -111,16 +115,16 @@
+ 
+ extern int icmp_sock;
+ extern int icmp6_sock;
+-extern int ident;
++extern uint16_t ident;
+ 
+ extern struct timeval next_probe;
+ 
+-int make_icmp_socket(void);
+-void recv_icmp(void);
++int make_icmp_socket(struct target *t);
++void recv_icmp(struct target *t);
+ void send_icmp_probe(struct target *t,int seq);
+ 
+-int make_icmp6_socket(void);
+-void recv_icmp6(void);
++int make_icmp6_socket(struct target *t);
++void recv_icmp6(struct target *t);
+ void send_icmp6_probe(struct target *t,int seq);
+ 
+ void analyze_reply(struct timeval time_recv,int seq,struct trace_info *ti);
+diff -ur apinger-0.6.1.orig//src/cfgparser1.y apinger-0.6.1/src/cfgparser1.y
+--- apinger-0.6.1.orig//src/cfgparser1.y	2003-03-26 11:27:47.000000000 +0000
++++ apinger-0.6.1/src/cfgparser1.y	2012-07-25 17:44:41.643063909 +0000
+@@ -97,6 +97,7 @@
+ %token DELAY_HIGH
+ 
+ %token DESCRIPTION
++%token SRCIP
+ %token ALARMS
+ %token INTERVAL
+ %token AVG_DELAY_SAMPLES
+@@ -248,6 +249,8 @@
+ targetcfg: /* */ 
+ 	| DESCRIPTION string 
+ 		{ cur_target->description=$2; }
++	| SRCIP string 
++		{ cur_target->srcip = $2; }
+ 	| ALARMS alarmlist
+ 		{ cur_target->alarms=$2; }
+ 	| ALARMS OVERRIDE alarmlist
+diff -ur apinger-0.6.1.orig//src/cfgparser2.l apinger-0.6.1/src/cfgparser2.l
+--- apinger-0.6.1.orig//src/cfgparser2.l	2003-03-26 11:27:47.000000000 +0000
++++ apinger-0.6.1/src/cfgparser2.l	2012-07-25 17:44:41.643063909 +0000
+@@ -82,6 +82,7 @@
+ delay_high	{ LOC; LOCINC; return DELAY_HIGH; }
+ delay_low	{ LOC; LOCINC; return DELAY_LOW; }
+ description	{ LOC; LOCINC; return DESCRIPTION; }
++srcip		{ LOC; LOCINC; return SRCIP; }
+ down		{ LOC; LOCINC; return DOWN; }
+ false		{ LOC; LOCINC; return FALSE; }
+ file		{ LOC; LOCINC; return FILE_; }
+diff -ur apinger-0.6.1.orig//src/conf.h apinger-0.6.1/src/conf.h
+--- apinger-0.6.1.orig//src/conf.h	2003-03-26 11:27:47.000000000 +0000
++++ apinger-0.6.1/src/conf.h	2012-07-25 17:44:41.643063909 +0000
+@@ -72,6 +72,7 @@
+ struct target_cfg {
+ 	char *name;
+ 	char *description;
++	char *srcip;
+ 	int interval;
+ 	int avg_delay_samples;
+ 	int avg_loss_delay_samples;
+diff -ur apinger-0.6.1.orig//src/icmp.c apinger-0.6.1/src/icmp.c
+--- apinger-0.6.1.orig//src/icmp.c	2012-07-25 17:46:59.422189729 +0000
++++ apinger-0.6.1/src/icmp.c	2012-07-25 17:44:41.644063862 +0000
+@@ -151,14 +151,14 @@
+ 	size=sizeof(*p)+sizeof(ti);
+ 
+ 	p->icmp_cksum = in_cksum((u_short *)p,size,0);
+-	ret=sendto(icmp_sock,p,size,MSG_DONTWAIT,
++	ret=sendto(t->socket,p,size,MSG_DONTWAIT,
+ 			(struct sockaddr *)&t->addr.addr4,sizeof(t->addr.addr4));
+ 	if (ret<0){
+ 		if (config->debug) myperror("sendto");
+ 	}
+ }
+ 
+-void recv_icmp(void){
++void recv_icmp(struct target *t){
+ int len,hlen,icmplen,datalen;
+ char buf[1024];
+ struct sockaddr_in from;
+@@ -171,6 +171,7 @@
+ struct iovec iov;
+ struct msghdr msg;
+ struct cmsghdr *c;
++reloophack:
+ 
+ 	iov.iov_base=buf;
+ 	iov.iov_len=1000;
+@@ -180,12 +181,13 @@
+ 	msg.msg_iovlen=1;
+ 	msg.msg_control=ans_data;
+ 	msg.msg_controllen=sizeof(ans_data);
+-	len=recvmsg(icmp_sock, &msg, MSG_DONTWAIT);
++	len=recvmsg(t->socket, &msg, MSG_DONTWAIT);
+ #else
+ socklen_t sl;
++reloophack:
+ 
+ 	sl=sizeof(from);
+-	len=recvfrom(icmp_sock,buf,1024,MSG_DONTWAIT,(struct sockaddr *)&from,&sl);
++	len=recvfrom(t->socket,buf,1024,MSG_DONTWAIT,(struct sockaddr *)&from,&sl);
+ #endif
+ 	if (len<0){
+ 		if (errno==EAGAIN) return;
+@@ -197,7 +199,7 @@
+ 	debug("checking CMSG...");
+ 	for (c = CMSG_FIRSTHDR(&msg); c; c = CMSG_NXTHDR(&msg, c)) {
+ 		debug("CMSG level: %i type: %i",c->cmsg_level,c->cmsg_type);
+-		if (c->cmsg_level != SOL_SOCKET || c->cmsg_type != SO_TIMESTAMP)
++		if (c->cmsg_level != SOL_SOCKET || c->cmsg_type != SCM_TIMESTAMP)
+ 			continue;
+ 		if (c->cmsg_len < CMSG_LEN(sizeof(struct timeval)))
+ 			continue;
+@@ -207,7 +209,7 @@
+ #endif
+ 	if (time_recvp==NULL){
+ #ifdef SIOCGSTAMP
+-		if (!ioctl(icmp_sock, SIOCGSTAMP, &time_recv)){
++		if (!ioctl(t->socket, SIOCGSTAMP, &time_recv)){
+ 			debug("Got timestampt from ioctl()");
+ 		}else
+ #endif
+@@ -227,7 +229,8 @@
+ 		return;
+ 	}
+ 	if (icmp->icmp_id != ident){
+-		debug("Alien echo-reply received");
++		debug("Alien echo-reply received from %s. Expected %i, received %i",inet_ntoa(from.sin_addr), ident, icmp->icmp_id);
++		goto reloophack;	
+ 		return;
+ 	}
+ 	debug("Ping reply from %s",inet_ntoa(from.sin_addr));
+@@ -239,19 +242,23 @@
+ 	analyze_reply(*time_recvp,icmp->icmp_seq,(struct trace_info*)(icmp+1));
+ }
+ 
+-int make_icmp_socket(void){
++int make_icmp_socket(struct target *t){
+ int on;
+ 
+-	icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+-	if (icmp_sock<0)
++	t->socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
++	if (t->socket < 0)
+ 		myperror("socket");
+ #ifdef SO_TIMESTAMP
+-	else{
++	else {
+ 		on=1;
+-		if (setsockopt(icmp_sock, SOL_SOCKET, SO_TIMESTAMP, &on, sizeof(on)))
++		if (setsockopt(t->socket, SOL_SOCKET, SO_TIMESTAMP, &on, sizeof(on)))
+ 			myperror("setsockopt(SO_TIMESTAMP)");
+ 	}
+ #endif
+-	return icmp_sock;
++
++	if (bind(t->socket, (struct sockaddr *)&t->ifaddr.addr4, sizeof(t->ifaddr.addr4)) < 0)
++			myperror("bind socket");
++
++	return t->socket;
+ }
+ 
+diff -ur apinger-0.6.1.orig//src/icmp6.c apinger-0.6.1/src/icmp6.c
+--- apinger-0.6.1.orig//src/icmp6.c	2012-07-25 17:46:59.422189729 +0000
++++ apinger-0.6.1/src/icmp6.c	2012-07-25 17:44:41.644063862 +0000
+@@ -113,14 +113,14 @@
+ 	memcpy(p+1,&ti,sizeof(ti));
+ 	size=sizeof(*p)+sizeof(ti);
+ 
+-	ret=sendto(icmp6_sock,p,size,MSG_DONTWAIT,
++	ret=sendto(t->socket,p,size,MSG_DONTWAIT,
+ 			(struct sockaddr *)&t->addr.addr6,sizeof(t->addr.addr6));
+ 	if (ret<0){
+ 		if (config->debug) myperror("sendto");
+ 	}
+ }
+ 
+-void recv_icmp6(void){
++void recv_icmp6(struct target *t){
+ int len,icmplen,datalen;
+ char buf[1024];
+ char abuf[100];
+@@ -134,6 +134,7 @@
+ struct iovec iov;
+ struct msghdr msg;
+ struct cmsghdr *c;
++reloophack6:
+ 
+ 	iov.iov_base=buf;
+ 	iov.iov_len=1000;
+@@ -143,12 +144,13 @@
+ 	msg.msg_iovlen=1;
+ 	msg.msg_control=ans_data;
+ 	msg.msg_controllen=sizeof(ans_data);
+-	len=recvmsg(icmp6_sock, &msg, MSG_DONTWAIT);
++	len=recvmsg(t->socket, &msg, MSG_DONTWAIT);
+ #else
+ socklen_t sl;
++reloophack6:
+ 
+ 	sl=sizeof(from);
+-	len=recvfrom(icmp6_sock,buf,1024,0,(struct sockaddr *)&from,&sl);
++	len=recvfrom(t->socket,buf,1024,0,(struct sockaddr *)&from,&sl);
+ #endif
+ 	if (len<0){
+ 		if (errno==EAGAIN) return;
+@@ -170,7 +172,7 @@
+ #endif
+ 	if (time_recvp==NULL){
+ #ifdef SIOCGSTAMP
+-		if (!ioctl(icmp6_sock, SIOCGSTAMP, &time_recv)){
++		if (!ioctl(t->socket, SIOCGSTAMP, &time_recv)){
+ 			debug("Got timestamp from ioctl()");
+ 		}else
+ #endif
+@@ -183,8 +185,11 @@
+ 	icmplen=len;
+ 	icmp=(struct icmp6_hdr *)buf;
+ 	if (icmp->icmp6_type != ICMP6_ECHO_REPLY) return;
+-	if (icmp->icmp6_id != ident) return;
+-
++	if (icmp->icmp6_id != ident){
++		debug("Alien echo-reply received from xxx. Expected %i, received %i", ident, icmp->icmp6_id);
++		goto reloophack6;
++		return;	
++	}
+ 	name=inet_ntop(AF_INET6,&from.sin6_addr,abuf,100);
+ 	debug("Ping reply from %s",name);
+ 	datalen=icmplen-sizeof(*icmp);
+@@ -196,33 +201,36 @@
+ }
+ 
+ 
+-int make_icmp6_socket(void){
++int make_icmp6_socket(struct target *t){
+ int opt;
+ 
+-	icmp6_sock = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+-	if (icmp6_sock<0)
++	t->socket = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
++	if (t->socket <0)
+ 		myperror("socket");
+ 	else {
+ 		opt=2;
+ #if defined(SOL_RAW) && defined(IPV6_CHECKSUM)
+-		if (setsockopt(icmp6_sock, SOL_RAW, IPV6_CHECKSUM, &opt, sizeof(int)))
++		if (setsockopt(t->socket, SOL_RAW, IPV6_CHECKSUM, &opt, sizeof(int)))
+ 			myperror("setsockopt(IPV6_CHECKSUM)");
+ #endif
+ #ifdef SO_TIMESTAMP
+ 		opt=1;
+-		if (setsockopt(icmp6_sock, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt)))
++		if (setsockopt(t->socket, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt)))
+ 			myperror("setsockopt(SO_TIMESTAMP)");
+ #endif
+ 		/*install_filter6();*/
+ 	}
+-	return icmp6_sock;
++	if (bind(t->socket, (struct sockaddr *)&t->ifaddr.addr6, sizeof(t->ifaddr.addr6)) < 0)
++		myperror("bind socket");
++
++	return t->socket;
+ }
+ 
+ #else /*HAVE_IPV6*/
+ #include "apinger.h"
+ 
+-int make_icmp6_socket(void){ return -1; }
+-void recv_icmp6(void){}
++int make_icmp6_socket(struct target *t){ return -1; }
++void recv_icmp6(struct target *t){}
+ void send_icmp6_probe(struct target *t,int seq){}
+ 
+ #endif /*HAVE_IPV6*/
+diff -ur apinger-0.6.1.orig//src/main.c apinger-0.6.1/src/main.c
+--- apinger-0.6.1.orig//src/main.c	2012-07-25 17:46:59.423189376 +0000
++++ apinger-0.6.1/src/main.c	2012-07-25 17:49:53.167255387 +0000
+@@ -72,6 +72,7 @@
+ 		{		/* target defaults */
+ 				"default",	/* name */
+ 				"",		/* description */
++				"",		/* interface */
+ 				1000,		/* interval */
+ 				20,		/* avg_delay_samples */
+ 				5,		/* avg_loss_delay_samples */
+@@ -96,7 +97,7 @@
+ 
+ int icmp_sock;
+ int icmp6_sock;
+-int ident;
++uint16_t ident;
+ 
+ struct timeval next_probe={0,0};
+ 
+@@ -204,12 +205,6 @@
+ 		}
+ 	}
+ 
+-	make_icmp_socket();
+-	make_icmp6_socket();
+-	if (icmp6_sock<0 && icmp_sock<0){
+-		return 1;
+-	}
+-
+ 	pw=getpwnam(config->user);
+ 	if (!pw) {
+ 		debug("getpwnam(\"%s\") failed.",config->user);
+@@ -264,15 +259,15 @@
+ 		return 1;
+ 	}
+ 
+-	ident=getpid();
++	ident=getpid() & 0xFFFF;
+ 	signal(SIGTERM,signal_handler);
+ 	signal(SIGINT,signal_handler);
+ 	signal(SIGHUP,signal_handler);
+ 	signal(SIGUSR1,signal_handler);
+ 	signal(SIGPIPE,signal_handler);
++	logit("Starting Alarm Pinger, apinger(%i)", ident);
++
+ 	main_loop();
+-	if (icmp_sock>=0) close(icmp_sock);
+-	if (icmp6_sock>=0) close(icmp6_sock);
+ 
+ 	logit("Exiting on signal %i.",interrupted_by);
+ 
