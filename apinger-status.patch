@@ -9,7 +9,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
 +	if(!config->status_format) fprintf(f,"%s\n",ctime(&tm));
  	for(t=targets;t;t=t->next){
 -		fprintf(f,"Target: %s\n",t->name);
--		fprintf(f,"Source IP: %s\n",t->config->srcip);
+-		fprintf(f,"Source: %s\n",t->config->srcip);
 -		fprintf(f,"Description: %s\n",t->description);
 -		fprintf(f,"Last reply received: #%i %s",t->last_received,
 -			ctime(&t->last_received_tv.tv_sec));
@@ -21,7 +21,7 @@ diff -ur apinger-0.6.1.orig//src/apinger.c apinger-0.6.1/src/apinger.c
 +		}
 +		else{
 +			fprintf(f,"Target: %s\n",t->name);
-+			fprintf(f,"Source IP: %s\n",t->config->srcip);
++			fprintf(f,"Source: %s\n",t->config->srcip);
 +			fprintf(f,"Description: %s\n",t->description);
 +			fprintf(f,"Last reply received: #%i %s",t->last_received,
 +				ctime(&t->last_received_tv.tv_sec));
